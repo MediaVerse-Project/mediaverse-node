@@ -1,0 +1,52 @@
+namespace org.accordproject.mvcopyrightlicense
+
+import org.accordproject.contract.* from https://models.accordproject.org/accordproject/contract.cto
+import org.accordproject.party.* from https://models.accordproject.org/accordproject/party.cto
+import org.accordproject.runtime.* from https://models.accordproject.org/accordproject/runtime.cto
+
+import org.accordproject.money.MonetaryAmount from https://models.accordproject.org/money@0.2.0.cto
+
+/* The template model  */
+asset CopyrightLicenseContract extends Contract {
+
+  /* licensee */
+  --> Party licensee
+  o String licenseeAddress optional   
+  o String ownershipDeedID
+  o String ownershipDeedLink
+  o String territorialScope
+  o Integer reproductionNumberOfCopies optional
+  o String typeOfFormat optional
+  o Integer physicalNumberOfCopies optional
+  o String typeOfMedium
+  o Integer numberOfYears optional
+  o MonetaryAmount paymentAmount optional
+  o Double paymentPercentage optional
+  o Boolean monthlyFrequency
+  o Boolean yearlyFrequency
+  o Boolean oneoffFrequency
+  o String paymentMethod optional
+  o Boolean commercial 
+  o Boolean remunerated
+  o Boolean sublicensable
+  o Boolean exclusive
+  o Boolean revocable
+  o Boolean translations
+  o Boolean transferable
+  o Boolean derivativeWorks
+  o Boolean makeAvailableDerivativeWorks
+  o Boolean makeNotAvailableDerivativeWorks
+  o Boolean makeAvailableTranslations
+  o Boolean makeNotAvailableTranslations
+  o Boolean infective
+  o Boolean anyForm
+  o Boolean distribute
+}
+
+// Request
+transaction EmptyRequest extends Request {
+}
+
+// Response
+transaction EmptyResponse extends Response {
+}

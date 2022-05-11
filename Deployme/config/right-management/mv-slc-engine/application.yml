@@ -1,0 +1,8 @@
+server:
+  port: 8083  #port on which mv-slc-engine is listening
+  error:
+    include-message: always #enable error detailed description
+mv-services-basepaths:
+  cicero-server: http://cicero-server:6001  #endpoint of the cicero-server
+slc-templates:
+  library-dir: /mv-cicero-template-library  #path of the SLC templates library (inside the container)

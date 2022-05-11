@@ -1,0 +1,10 @@
+server:
+  port: 8081  #port on which ipr-service is listening
+  bearer-token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJub2RlbmFtZSI6ImF0Yy12bS5nciIsInJvdXRpbmdJZCI6IjYyNDJhOGUyZTk0NWVlNzJkYTIwNGVmOUBhdGMtdm0uZ3IiLCJpZCI6IjYyNDJhOGUyZTk0NWVlNzJkYTIwNGVmOSIsImVtYWlsIjoiaXByLXNlcnZpY2VAbWVkaWF2ZXJzZS5hdGMuZ3IiLCJ1c2VybmFtZSI6Imlwci1zZXJ2aWNlQG1lZGlhdmVyc2UuYXRjLmdyIn0.CrAdaiqXYnqnS_khc5bKhMQmT4NXNhgj3Rl0WYXY9FY
+  #bearer token of the IPR Service (to make requests to DAM)
+  error:
+    include-message: always #enable error detailed description
+mv-services-basepaths:
+  mv-blockchain-service-provider: http://mv-bcsp:8082/ipr/bc  #endpoint of the BCSP
+  mv-slc-engine: http://mv-slc-engine:8083  #endpoint of the MV SLC Engine
+  mediaverse-node-backend: http://mv-dam-api:8888  #endpoint of the MV Node Backend

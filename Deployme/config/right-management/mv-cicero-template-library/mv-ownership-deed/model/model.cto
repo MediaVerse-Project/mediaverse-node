@@ -1,0 +1,29 @@
+namespace org.accordproject.mvownershipdeed
+
+import org.accordproject.contract.* from https://models.accordproject.org/accordproject/contract.cto
+import org.accordproject.party.* from https://models.accordproject.org/accordproject/party.cto
+import org.accordproject.runtime.* from https://models.accordproject.org/accordproject/runtime.cto
+
+concept OwnersList {
+    /* owner */
+ --> Party owner
+ o String ownerAddress
+ o Double ownerShare
+}
+
+  /* The template model  */
+asset OwnershipDeedContract extends Contract {
+
+
+  o OwnersList[] owners
+  o String assetID
+}
+
+
+// Request
+transaction EmptyRequest extends Request {
+}
+
+// Response
+transaction EmptyResponse extends Response {
+}

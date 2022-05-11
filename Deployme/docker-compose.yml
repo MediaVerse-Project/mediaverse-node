@@ -1,0 +1,160 @@
+version: "3.8"
+
+services:
+  dam:
+    container_name: mv-dam-api
+    image: mediaverseeu/dam:1.1.10
+    ports:
+      - "5000:8888"
+    volumes:
+      - backend-storage:/opt
+    env_file:
+      - ./config/dam/.env
+    depends_on:
+      - mongo
+      - solr
+
+  dashboard-ui:
+    container_name: dashboard-ui
+    image: mediaverseeu/dashboard-ui:1.0.5
+    ports:
+      - "3000:80"
+    env_file:
+      - ./config/ui/.env
+
+  ipr-service:
+    container_name: ipr-service
+    image: mediaverseeu/ipr-service:4.0.1
+    volumes:
+      - "./config/right-management/ipr-service/application.yml:/application.yml"
+
+  mv-slc-engine:
+    container_name: mv-slc-engine
+    image: mediaverseeu/mv-slc-engine:4.0.0
+    volumes:
+      - "./config/right-management/mv-slc-engine/application.yml:/application.yml"
+      - "./config/right-management/mv-cicero-template-library:/mv-cicero-template-library"
+      
+  cicero-server:
+    container_name: cicero-server
+    image: mediaverseeu/cicero-server:0.22.2
+    env_file:
+      - ./config/right-management/cicero-server/.env    
+    volumes:
+      - "./config/right-management/mv-cicero-template-library:/mv-cicero-template-library"
+
+  mv-bcsp:
+    container_name: mv-bcsp
+    image: mediaverseeu/mv-blockchain:1.1.0
+    volumes:
+      - "./config/right-management/mv-bcsp/config/config.json:/mv-blockchain-service-provider/config/config.json"
+    env_file:
+      - ./config/right-management/mv-bcsp/.env
+
+
+  mv-bcspeh:
+    container_name: mv-bcspeh
+    image: mediaverseeu/mv-blockchain-event:1.1.0
+    volumes:
+      - "./config/right-management/mv-bcsp/config/config.json:/mv-blockchain-service-provider-event-handler/config/config.json"
+    env_file:
+      - ./config/right-management/mv-bcspeh/.env
+
+
+  mv-eth:
+    image: mediaverseeu/mv-eth:1.0.0
+    volumes:
+      - eth-net:/eth-net
+
+  solr:
+    container_name: solr-8-media-verse
+    image: solr:8
+    restart: always
+    ports:
+      - 8983:8983
+    volumes:
+      - mv_solr_data:/var/solr
+      - ./config/solr/cores/mediaverse:/var/solr/cores/mediaverse:ro
+    command:
+      - solr-precreate
+      - mediaverse 
+      - /var/solr/cores/mediaverse
+
+  mongo:
+    container_name: mongo
+    image: mongo:4.4
+    restart: always
+    env_file:
+      - ./config/mongo/.env
+    ports:
+      - 27017:27017
+    #environment:
+      # MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      # MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      # MONGO_INITDB_DATABASE: ${MONGO_DB_NAME}
+    volumes:
+      # take the init script to create the user
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - mv_mongo_data:/data/db
+
+  ipfs_host:
+    image: mediaverseeu/ipfs_host
+    container_name: ipfs_host
+    env_file:                                                                                                                                                                     
+    - ./config/ipfs_host/.env
+    volumes:
+    - './config/ipfs_host/:/data/ipfs'
+    ports:
+    - "5001:5001"
+    - "4001:4001"
+    - "8080:8080"
+    command:
+    - daemon 
+    - --enable-pubsub-experiment
+    
+  mv_ipfs_api:
+    container_name: ipfs_api
+    image: mediaverseeu/mv_ipfs_api:1.1.1
+    ports:
+    - "4040:4040"
+    env_file:
+    - ./config/ipfs_api/.env
+    depends_on:
+    - ipfs_host
+
+
+  publisher:
+    image: "mediaverseeu/publisher:latest"
+    ports:
+      - 5501:80
+    volumes:
+      - static-content:/usr/share/nginx/html
+
+  transcoder:
+    image: "mediaverseeu/transcoder:latest"
+    ports:
+      - 5500:5000
+    volumes:
+      - static-content:/app/media/output
+
+  copyright-negotiation:
+    image: "mediaverseeu/copyrights-negotiation"
+    working_dir:
+      /usr/src/app
+    ports:
+      - 3003:3003
+
+  metadata-model:
+    image: "mediaverseeu/metadata-model"
+    working_dir:
+      /usr/src/app
+    ports:
+      - 3002:3002
+
+volumes:
+  mv_solr_data:
+  mv_mongo_data:
+  backend-storage:
+    driver: local
+  eth-net:
+  static-content:
