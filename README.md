@@ -38,8 +38,11 @@ The deployment structure consists of a **docker-compose** file, a **mongo init s
 ```sh
 config
 ..dam
+..ipfs_api
+..ipfs_host
 ..mongo
 ..right-management
+..solr
 ..ui
 ```
 
@@ -70,10 +73,17 @@ Set mongo db parameters:
 ```sh
 # Mongo DB parameters
 # The same values as in a)
+MONGO_CONNECTION_URL=<not commom>
 MONGO_DB_NAME=<not commom>
 MONGO_ROOT_USERNAME=<not common>
 MONGO_ROOT_PASSWORD=<not common>
 ```
+
+*MONGO_CONNECTION_URL* parameter has the following structure:
+
+*mongodb://MONGO_ROOT_USERNAME:MONGO_ROOT_PASSWORD@mongo:27017/MONGO_DB_NAME?authSource=admin&readPreference=primary&directConnection=true&ssl=false*
+
+where *MONGO_ROOT_USERNAME*, *MONGO_ROOT_PASSWORD*, *MONGO_DB_NAME* should be replaced with their actual values.
 
 Set asset storage:
 
@@ -111,6 +121,12 @@ For example:
 
 ```sh
 DAM_DOMAIN=https://xxx.xxx.xxx.xxx:5000
+```
+
+or 
+
+```sh
+DAM_DOMAIN=https://my.domain.com:5000
 ```
 
 with `xxx.xxx.xxx.xxx` being the IP of the server in which the service is deployed, and `5000` being the port in which DAM's API is exposed.
@@ -287,10 +303,16 @@ REACT_APP_FIREBASE_API_KEY=<not common>
 IPFS bootstrap node:
 
 ```sh
-IPFS_BOOTSTRAP_ADDR= /ip4/77.231.202.172/tcp/4001/p2p/12D3KooWPr8KvRorAu2yPWmKg6CwbjayWpZn49vRuPq59t6gJ7Ds
+IPFS_BOOTSTRAP_ADDR=<IPFS Bootstrap Node Identifier>
 ```
 
-That parameter helps IPFS to discover the rest of the nodes in the neowork. For v1, `/ip4/77.231.202.172/tcp/4001/p2p/12D3KooWPr8KvRorAu2yPWmKg6CwbjayWpZn49vRuPq59t6gJ7Ds` will be used as bootstrap node for network discivery. 
+For example:
+
+```sh
+IPFS_BOOTSTRAP_ADDR=  /ip4/83.149.101.53/tcp/4001/p2p/12D3KooWGgFA2ZV4Uy7JUFMzs6VLCFZesPNtEpePHa3FbaX6MGHf
+```
+
+That parameter helps IPFS to discover the rest of the nodes in the neowork. For v1, `/ip4/83.149.101.53/tcp/4001/p2p/12D3KooWGgFA2ZV4Uy7JUFMzs6VLCFZesPNtEpePHa3FbaX6MGHf` will be used as bootstrap node for network discivery.
 
 Local DAM address (It is the same domain as b):
 
@@ -315,15 +337,3 @@ Run the application, from the root level order:
 docker-compose pull # pull the images
 docker-compose up -d # run the docker-compose
 ```
-
-### How to update the Solr schema
-
-After successfully deployed the compose, update the SOLR schema by executing the [solr_schema.sh](./Deployme/solr_schema.sh)
-
-```sh
-chmod a+x solr_schema.sh
-dos2unix solr_schema.sh
-./solr_schema.sh
-```
-
-If the execution of script fails try to execute the included curl commands manually.
