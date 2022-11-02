@@ -185,20 +185,30 @@
     <field name="url" type="string"/>
     <field name="language" type="string"/>
     <field name="signature" type="string"/>
-    <field name="face_recognition_faces_identified" type="pint"/>
-    <field name="face_recognition_identities_celebname" type="strings"/>
-    <field name="face_recognition_identities_confidence" type="pfloats"/>
-    <field name="image_action_recognition_action" type="string"/>
-    <field name="image_action_recognition_confidence" type="pfloat"/>
-    <field name="image_captioning_caption" type="string"/>
-    <field name="object_detection_object" type="strings"/>
-    <field name="object_detection_confidence" type="pfloats"/>
-    <field name="video_action_recognition_action" type="strings"/>
-    <field name="video_action_recognition_confidence" type="pfloats"/>
+    <field name="isRegistered" type="boolean"/>
+
+    <field name="image_caption" type="string"/>
+    <field name="image_is_meme" type="boolean"/>
+    <field name="image_meme_confidence" type="pfloat"/>
+    <field name="image_is_nsfw" type="boolean"/>
+    <field name="image_nsfw_confidence" type="pfloat"/>
+    <field name="image_recognized_action" type="string"/>
+    <field name="image_recognized_action_confidence" type="pfloat"/>
+    <field name="image_faces_identified" type="pint"/>
     <field name="image_disturbing_content" type="boolean"/>
     <field name="image_disturbing_content_confidence" type="pfloat"/>
-    <field name="meme_detection_result_ismeme" type="boolean"/>
-    <field name="meme_detection_result_confidence" type="pfloat"/>
+    <field name="image_detected_objects" type="strings"/>   
+    <field name="image_detected_persons" type="strings"/>   
+    
+    <field name="video_recognized_actions" type="strings"/>
+    <field name="video_detected_objects" type="strings"/>
+    <field name="video_disturbing_scenes_count" type="pint"/>
+    <field name="video_disturbing_scenes_duration" type="pfloat"/>
+    <field name="video_detected_persons" type="strings"/>
+    <field name="video_nsfw_scenes_count" type="pint"/>
+    <field name="video_nsfw_scenes_duration" type="pfloat"/>
+
+    <field name="3d_detected_objects" type="strings"/>
 
     <!-- catchall field, containing all other searchable text fields (implemented via copyField further on in this schema -->
     <field name="searchable_text" type="text" indexed="true" stored="false" multiValued="true"/>
@@ -233,11 +243,14 @@
     <dynamicField name="random*" type="random" />
 
     <copyField source="description" dest="searchable_text"/>
-    <copyField source="face_recognition_identities_celebname" dest="searchable_text"/>
-    <copyField source="image_action_recognition_action" dest="searchable_text"/>
-    <copyField source="image_captioning_caption" dest="searchable_text"/>
-    <copyField source="object_detection_object" dest="searchable_text"/>
-    <copyField source="video_action_recognition_action" dest="searchable_text"/>
+    <copyField source="image_caption" dest="searchable_text"/>
+    <copyField source="image_recognized_action" dest="searchable_text"/>
+    <copyField source="image_detected_persons" dest="searchable_text"/>
+    <copyField source="image_detected_objects" dest="searchable_text"/>
+    <copyField source="video_recognized_actions" dest="searchable_text"/>
+    <copyField source="video_detected_persons" dest="searchable_text"/>
+    <copyField source="video_detected_objects" dest="searchable_text"/>
+    <copyField source="3d_detected_objects" dest="searchable_text"/>
 
     <!-- uncomment the following to ignore any fields that don't already match an existing field name or dynamic field, rather than reporting them as an error. 
         alternately, change the type="ignored" to some other type e.g. "text" if you want unknown fields indexed and/or stored by default --> 

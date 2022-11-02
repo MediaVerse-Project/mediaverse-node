@@ -1,0 +1,1 @@
+./services.sh && ./routes.sh

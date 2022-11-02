@@ -38,12 +38,14 @@ The deployment structure consists of a **docker-compose** file, a **mongo init s
 ```sh
 config
 ..dam
-..ipfs_api
-..ipfs_host
+..kong
 ..mongo
 ..right-management
-..solr
 ..ui
+..ipfs_api
+..ipfs_host
+..solr
+..postfix
 ```
 
 This folder includes all the configuration of the node.
@@ -114,13 +116,13 @@ AWS_REGION=<not common>
 The domain or IP of the DAM has to be configured. This value is used to generate proxy format links and deep links.
 
 ```sh
-DAM_DOMAIN=<not common> # It is the DOMAIN of the node
+DAM_DOMAIN=<not common> # It is the DOMAIN of the node + the DAM path as served by KONG GW
 ```
 
 For example:
 
 ```sh
-DAM_DOMAIN=https://xxx.xxx.xxx.xxx:5000
+DAM_DOMAIN=http://{DOMAIN_NAME}/dam
 ```
 
 or 
@@ -139,18 +141,90 @@ DAM_NAME=<not commom>
 DAM_NAME=atc-vm.gr
 ```
 
-Finally, a twitter dev account must be set. Please refer to [Twitter's documentation](https://developer.twitter.com/en/docs/authentication/overview)
+Maximum file size limit can also be set:
+```sh
+SPRING_SERVLET_MULTIPART_MAX-FILE-SIZE=25MB # meaning total file size cannot exceed 25MB.
+SPRING_SERVLET_MULTIPART_MAX-REQUEST-SIZE=25MB #meaning total request size for a multipart/form-data cannot exceed 128KB.
+## If not set 25MB will be the default
+```
+
+```sh
+DAM_NAME=<not commom> 
+# For example:
+DAM_NAME=atc-vm.gr
+```
+
+For interacting with twitter an API Key and Secret must be generated following the below steps:
+Sign up for a developer account:
+
+1. Log-in to Twitter and verify your email address. (Note that the email and phone number verification from your Twitter account may be needed to apply for a developer account, review on the Twitter help center: email address confirmation or add phone number.)
+2. Click sign up at developer.twitter.com to enter your developer account name, location and use case details
+3. Review and accept the developer agreement and submit
+4. Check your email to verify your developer account. Look for an email from developer-accounts@twitter.com that has the subject line: "Verify your Twitter Developer Account" Note: the developer-accounts@twitter.com email is not available for inbound requests.
+5. You should now have access to the Developer Portal to create a new App and Project with Essential access, or will need to continue your application with Elevated access
+6. If you apply for Elevated access (or Academic Research access) please continue to check your verified email for information about your application.
+To check if you have a developer account go to the developer portal dashboard to review your account status and setup.
+
+To acquire an API Key and Secret:
+Create a Twitter App: https://developer.twitter.com/en/docs/apps within the developer portal.
+ 
+When you create your Twitter App, you will be presented with your API Key and Secret, along with a Bearer Token. Please note that these credentials are displayed only once, so make sure to save them in your password manager or somewhere secure.
+
+Please refer to [Twitter's documentation](https://developer.twitter.com/en/docs/authentication/overview) for more details.
 
 ```sh
 TWITTER_OAUTH_CONSUMER_KEY=<not common - define the dev twitter key>
 TWITTER_OAUTH_CONSUMER_SECRET=<not common - define the dev twitter secret>
 ```
 
-The followong parameters can be left untouched:
+For interacting with YouTube Data API v3 you need to create or use an existing Google account used for the project.
+
+Follow the steps below to complete the Google project creation and configuration.
+
+Sign in to Google account:
+
+1. From the Google's account console (https://console.cloud.google.com/) you should create a new project (provide project name and location).
+2. From the menu on the left select APIs & services -> Enabled APIs & services.
+3. From the button on the top click Enable APIS AND SERVICES and search for YouTube Data API v3. Click the card and 
+   select ENABLE, to make the  YouTube DATA API active for the project. After the YouTube API is enabled you will land 
+   to the APIs configuration page.
+4. From there, navigate to the Credentials from the menu on the left.
+5. From the top select create Credentials and select the API Key type of credential. This will create and API key for our YouTube enabled API which we will set to GOOGLE_API_KEY key of the .env file of the DAM. This API key will be used to perform actions to the PUBLIC available data of YouTube using the DAM integration.
+```sh  
+GOOGLE_API_KEY  =<not common - define the dev Google API key>  
+```
+7. To enable DAM YouTube integration to post a video on behalf of a logged-in user to his/her YouTube channel we should 
+   also create a new Credential of type OAuth client ID. This type of credential requires to configure an 
+   oauth consent screen, so we will proceed with this configuration first.
+8. We select from the menu on the left OAuth consent screen and follow the setup steps. We choose an "External" user 
+   type and proceed with the required fields (App name, User support email and Developer contact information email.)
+   configuration of the form.
+9. In the next step to set up the SCOPES, we enable the scope from YouTube API v3 -> .../auth/youtube.upload
+   (Manage your YouTube videos)
+10. Add a test user email to the next step using the ADD USERS button and save the configuration on the last step 
+    with the summary of the OAuth consent screen setup.
+11. Having the OAuth consent screen configured we can proceed with the creation of the OAuth client id credential.
+12. From the create credentials button on the top select the OAuth client id credential creation, and select 
+    the "web application" type, give a web client name and a newly oauth client id credential is created.
+13. After this process we will be provided with a client ID and a client Secret which will set to the DAM's .env file 
+    to the GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET keys respectively.
+```sh  
+GOOGLE_OAUTH_CLIENT_ID =<not common - define the dev google key>  
+GOOGLE_OAUTH_CLIENT_SECRET =<not common - define the dev google secret>  
+```
+With these keys we can make requests from the DAM to the YouTube DATA API on behalf of a logged-in user to Google 
+(only for the request that cover the requested scopes - in our case only to upload videos to YouTube).
+
+```sh
+MAIL_USERNAME=mail_root@DOMAIN_EMAIL_NAME # a generic user for connecting to smtp, the DOMAIN_EMAIL_NAME must be the same as the one that will be set for postfix service
+```
+
+The following parameters can be left untouched:
 
 ```sh
 SOLR_URL=http://solr:8983/solr # the same for all nodes. 
 IPR_URL=http://ipr-service:8081 # the same for all nodes
+IPFS_URL=http://ipfs_host:5001/api/v0/ # the same for all nodes
 TRANSCODER_URL=http://transcoder:5000 # the same for all nodes
 
 # it is the URL of NDD service
@@ -164,6 +238,9 @@ GRPC_URL=<not common>  # for V1 it will be the same for all nodes,
 GRPC_URL=160.40.53.61:37526
 
 SERVER_PORT=8888 # the same for all nodes
+
+MAIL_PASSWORD=mail_password # a generic password
+MAIL_HOST=postfix # the name of the postfix service
 ```
 
 #### **c) Right-Management components:**
@@ -271,27 +348,44 @@ UPDATE_API_ENDPOINT=event/update #path of the event update API of the IPR Servic
 
 The following URLs should be defined:
 
+URLS FORMAT = {DOMAIN_NAME}/{COMPONENT_PATH}
+
 ```sh
-# It is the DOMAIN of the node. It is the same domain as b)
-REACT_APP_API_URL=http://xxx.xxx.xxx.xxx:5000 
-
-# It is the DOMAIN of the node. It is the same domain as b)
-REACT_APP_IPR_URL=http://xxx.xxx.xxx.xxx:5000 
-
-REACT_APP_METADATA_URL=http://xxx.xxx.xxx.xxx:3002
-REACT_APP_IPFS_URL=http://xxx.xxx.xxx.xxx:5050/api
-REACT_APP_TRANSCODING_URL=http://xxx.xxx.xxx.xxx:5500
-REACT_APP_THUMBNAIL_URL=http://xxx.xxx.xxx.xxx:5501
-REACT_APP_LICENSES_URL=http://xxx.xxx.xxx.xxx:3003
-
-# It is the domain of the node plus the port of ipfs api (4040)
-REACT_APP_FEDSE_URL=http://xxx.xxx.xxx.xxx:4040
+# It is the DOMAIN of the node + /dam
+REACT_APP_API_URL=http://{DOMAIN_NAME}/{dam}
+# It is the DOMAIN of the node + /copyright 
+REACT_APP_LICENSES_URL=http://{DOMAIN_NAME}/{copyright}
+# It is the DOMAIN of the node + /ipr
+REACT_APP_IPR_URL=http://{DOMAIN_NAME}/{ipr}
+# It is the DOMAIN of the node + /ipfs
+REACT_APP_FEDSE_URL=http://{DOMAIN_NAME}/{ipfs}
 
 ```
 
 All of these services point to the same IP in which the services are deployed (`xxx.xxx.xxx.xxx`), with a different port according to the service.
 
-A firebase account must be set, please refer to [Firebase documentation](https://firebase.google.com/docs/auth/web/twitter-login):
+A firebase account must be set and configured with twitter and Google authentication provider.
+
+To set up the firebase:
+1. Sign in to Firebase https://firebase.google.com/. (use the same Google account and project as the one created 
+   previously for the YouTube integration)
+2. Click Go to console.
+3. Use the project which was created previously on the YouTube integration section of the DAM. The project 
+   configuration page is open on the firebase console.
+4. In the Firebase console, open the Authentication section.
+5. On the Sign in method tab, enable the Twitter and the Google provider (for the Google provider no more action is 
+   needed).
+6. [For twitter authentication] Add the API key and API secret from that provider's developer console to the provider 
+   configuration:
+a) Register your app as a developer application on Twitter(see DAM's section above) and get your app's OAuth API key and API secret.
+b) Make sure your Firebase OAuth redirect URI (e.g. my-app-12345.firebaseapp.com/__/auth/handler) is set as your Authorization callback URL in your app's settings page on your Twitter app's config.
+7. Click Save.
+8. In the Authentication -- Settings add the domain of the node as an authorized one.
+9. In the Project Overview -- Project Settings the auth_domain and the api key can be retrieved:
+auth_domain=Project ID.firebaseapp.com
+api_key=Web API Key
+For more details please refer to [Firebase documentation](https://firebase.google.com/docs/auth/web/twitter-login).
+
 
 ```sh
 REACT_APP_FIREBASE_AUTH_DOMAIN=<not commom>
@@ -314,19 +408,109 @@ IPFS_BOOTSTRAP_ADDR=  /ip4/83.149.101.53/tcp/4001/p2p/12D3KooWGgFA2ZV4Uy7JUFMzs6
 
 That parameter helps IPFS to discover the rest of the nodes in the neowork. For v1, `/ip4/83.149.101.53/tcp/4001/p2p/12D3KooWGgFA2ZV4Uy7JUFMzs6VLCFZesPNtEpePHa3FbaX6MGHf` will be used as bootstrap node for network discivery.
 
-Local DAM address (It is the same domain as b):
+Local DAM address # It is the DOMAIN of the node + the DAM path as served by KONG GW 
 
 ```sh
-DAM_ADDR=http://xxx.xxx.xxx.xxx:5000
+DAM_ADDR=http://{DOMAIN_NAME}/dam
 ```
 
-The following parameters canbe left untouched:
+The following parameters can be left untouched:
 
 ```sh
 IPFS_NODE_IP=ipfs_host # Container name of the IPFS Host service. Default: ipfs_host
 IPFS_NODE_PORT=5001 # Port of the IPFS Host service. Default: 5001
 IPFS_NODE_TIMEOUT=10
 FSEARCH_RESULT_TIMEOUT=30
+```
+
+#### **f) Postfix** 
+The following env variables must be in place before running the postfix container:
+
+Variables with different value per node
+```sh
+DOMAIN_NAME=xxxxxx.yz # the email domain name
+```
+
+Variables with common value per node
+```sh
+TIMEZONE=est 
+MESSAGE_SIZE_LIMIT=10240000 
+AUTH_USER=mail_root
+AUTH_PASSWORD=mail_password
+DISABLE_SMTP_AUTH_ON_PORT_25=true
+ENABLE_DKIM=true
+DKIM_KEY_LENGTH=1024
+DKIM_SELECTOR=default
+```
+More configuration options can be found at `https://github.com/takeyamajp/docker-postfix`
+It is very important to set DKIM keys in DNS of the domain for the mails to be delivered succesfully.
+
+#### **f) Kong Gateway**
+
+The directory for the Kong Gateway configurations consists of the following sub-directories:
+
+- postgres - In this sub-directory, there is the .env file that should be set for the postgres DB that KONG GW uses
+  to store the data needed to work (default values are proposed below - can use these with no problem)
+
+```sh
+POSTGRES_USER=define the POSTGRES kong user | e.g. kong
+POSTGRES_DB=define the POSTGRES kong DB | e.g. kong
+POSTGRES_PASSWORD=define the POSTGRES kong user password | e.g. kongpass
+```
+
+- kong-migration - In this sub-directory, there is the .env file that should be set for the KONG GW postgres DB to
+  bootstrap
+
+The following parameters should be set (default values are proposed below - can use these with no problem):
+
+```sh
+KONG_DATABASE=postgres
+KONG_PG_HOST= Should be the same as the container name of the postgres container, e.g. kong-database
+KONG_PG_PASSWORD= Should be the same as the password defined as env var on postgres container, e.g. kongpass
+KONG_PASSWORD= The default password used by the admin super user of the Kong Gateway. default = test
+```
+
+- kong-gateway - In this sub-directory, there is the .env file that should be set for the GW container to run
+
+The following parameters should be set (default values are proposed below - can use these with no problem):
+```sh
+#KONG_PG_HOST=<define the postgres container name that kong GW uses> <e.g. kong-database>
+#KONG_PG_USER=<define the kong-postgres user> <e.g. kong>
+#KONG_PG_PASSWORD=<define the POSTGRES kong user's password> | <e.g. kongpass> the same as the one set in postgres .env
+```
+
+The following parameters can be left untouched:
+
+```sh
+KONG_DATABASE=postgres
+#The following standard output/error env variables will only work on Unix environments
+KONG_PROXY_ACCESS_LOG=/dev/stdout
+KONG_ADMIN_ACCESS_LOG=/dev/stdout
+KONG_PROXY_ERROR_LOG=/dev/stderr
+KONG_ADMIN_ERROR_LOG=/dev/stderr
+#The port that the Kong Admin API listens on for requests
+KONG_ADMIN_LISTEN=0.0.0.0:8001
+#The HTTP URL for accessing Kong Manager
+KONG_ADMIN_GUI_URL=http://localhost:8002
+```
+
+- init - In this sub-directory, there are all the init commands that should be performed to configure KONG GW services 
+  and routes
+
+```sh
+If permission denied error occurs when curl image executes init.sh script, navigate to /kong/init/ directory and run 
+"chmod a+x *.sh"
+```
+
+#### **g) moderation UI** `./config/moderationui/.env`
+
+The following URL should be defined:
+
+URL FORMAT = {DOMAIN_NAME}/{COMPONENT_PATH}
+
+```sh
+# It is the DOMAIN of the node + /dam/
+REACT_APP_API_URL=http://{DOMAIN_NAME}/{dam}/
 ```
 
 ### How to run it with Docker
@@ -336,4 +520,21 @@ Run the application, from the root level order:
 ```sh
 docker-compose pull # pull the images
 docker-compose up -d # run the docker-compose
+```
+
+### FAQ
+
+1. I have updated the solr schema but the changes are not reflected. What can I do?
+
+```sh
+In some cases, the solr precreate script that is used for generating the solr core does not respect the provided configset.
+For such cases it is recommended to manually copy the configset into the container:
+eg. docker cp ./config/solr/mediaverse/conf/ solr-8-media-verse:/var/solr/data/mediaverse/
+In general a conf folder is expected inside the data folder of the core.
+```
+
+2. I have added the ToS, Cookies and Privacy policy documents but they are not accessible
+
+```sh
+Please add SPRING_WEB_RESOURCES_STATIC-LOCATIONS=file:/static/ in the /Deployme/config/dam/.env
 ```

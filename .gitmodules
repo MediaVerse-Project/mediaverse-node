@@ -1,0 +1,3 @@
+[submodule "mv-cicero-template-library"]
+	path = Deployme/config/right-management/mv-cicero-template-library
+	url = https://srcrep.atc.gr/mediaverse/wp4/smart-legal-contracts/mv-cicero-template-library.git

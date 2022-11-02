@@ -1,7 +1,13 @@
+logging:
+  level:
+    root: INFO #define the level of logging: ERROR > WARN > INFO > DEBUG > TRACE
+
 server:
   port: 8083  #port on which mv-slc-engine is listening
   error:
     include-message: always #enable error detailed description
+    include-stack-trace: 1 #enable stack-trace in errors description
+
 mv-services-basepaths:
   cicero-server: http://cicero-server:6001  #endpoint of the cicero-server
 slc-templates:

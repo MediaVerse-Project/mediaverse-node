@@ -3,11 +3,15 @@ version: "3.8"
 services:
   dam:
     container_name: mv-dam-api
-    image: mediaverseeu/dam:1.1.10
-    ports:
-      - "5000:8888"
+    image: mediaverseeu/dam:1.1.42
+#    ports:
+#      - "5000:8888"
     volumes:
       - backend-storage:/opt
+      # add the relevant pdf files
+      - "./config/dam/terms.pdf:/static/terms.pdf"
+      - "./config/dam/privacy.pdf:/static/privacy.pdf"
+      - "./config/dam/cookies.pdf:/static/cookies.pdf"
     env_file:
       - ./config/dam/.env
     depends_on:
@@ -16,21 +20,30 @@ services:
 
   dashboard-ui:
     container_name: dashboard-ui
-    image: mediaverseeu/dashboard-ui:1.0.5
-    ports:
-      - "3000:80"
+    image: mediaverseeu/dashboard-ui:1.1.13
+#    ports:
+#      - "3000:80"
     env_file:
       - ./config/ui/.env
 
+  moderation-ui:
+    container_name: moderation-ui
+    image: mediaverseeu/moderatorui:1.0.8
+#    ports:
+#      - "3000:80"
+    env_file:
+      - ./config/moderationui/.env
+
+
   ipr-service:
     container_name: ipr-service
-    image: mediaverseeu/ipr-service:4.0.1
+    image: mediaverseeu/ipr-service:7.0.0
     volumes:
       - "./config/right-management/ipr-service/application.yml:/application.yml"
 
   mv-slc-engine:
     container_name: mv-slc-engine
-    image: mediaverseeu/mv-slc-engine:4.0.0
+    image: mediaverseeu/mv-slc-engine:6.0.0
     volumes:
       - "./config/right-management/mv-slc-engine/application.yml:/application.yml"
       - "./config/right-management/mv-cicero-template-library:/mv-cicero-template-library"
@@ -45,7 +58,7 @@ services:
 
   mv-bcsp:
     container_name: mv-bcsp
-    image: mediaverseeu/mv-blockchain:1.1.0
+    image: mediaverseeu/mv-blockchain:2.0.1
     volumes:
       - "./config/right-management/mv-bcsp/config/config.json:/mv-blockchain-service-provider/config/config.json"
     env_file:
@@ -70,8 +83,8 @@ services:
     container_name: solr-8-media-verse
     image: solr:8
     restart: always
-    ports:
-      - 8983:8983
+#    ports:
+#      - 8983:8983
     volumes:
       - mv_solr_data:/var/solr
       - ./config/solr/cores/mediaverse:/var/solr/cores/mediaverse:ro
@@ -86,8 +99,8 @@ services:
     restart: always
     env_file:
       - ./config/mongo/.env
-    ports:
-      - 27017:27017
+#    ports:
+#      - 27017:27017
     #environment:
       # MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       # MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
@@ -98,63 +111,139 @@ services:
       - mv_mongo_data:/data/db
 
   ipfs_host:
-    image: mediaverseeu/ipfs_host
+    image: mediaverseeu/ipfs_host:1.0.1
     container_name: ipfs_host
     env_file:                                                                                                                                                                     
     - ./config/ipfs_host/.env
     volumes:
-    - './config/ipfs_host/:/data/ipfs'
+    - 'ipfs_data:/data/ipfs'
     ports:
     - "5001:5001"
     - "4001:4001"
-    - "8080:8080"
+    # - "8080:8080"
     command:
     - daemon 
     - --enable-pubsub-experiment
     
   mv_ipfs_api:
     container_name: ipfs_api
-    image: mediaverseeu/mv_ipfs_api:1.1.1
-    ports:
-    - "4040:4040"
+    image: mediaverseeu/mv_ipfs_api:1.2.0
+#    ports:
+#      - "4040:4040"
     env_file:
-    - ./config/ipfs_api/.env
+      - ./config/ipfs_api/.env
     depends_on:
-    - ipfs_host
+      - ipfs_host
 
 
   publisher:
-    image: "mediaverseeu/publisher:latest"
-    ports:
-      - 5501:80
+    image: "mediaverseeu/publisher:1.0.0"
+#    ports:
+#      - 5501:80
     volumes:
       - static-content:/usr/share/nginx/html
 
   transcoder:
-    image: "mediaverseeu/transcoder:latest"
-    ports:
-      - 5500:5000
+    image: "mediaverseeu/transcoder:1.1.5"
+#    ports:
+#      - 5500:5000
     volumes:
       - static-content:/app/media/output
 
   copyright-negotiation:
-    image: "mediaverseeu/copyrights-negotiation"
+    image: "mediaverseeu/copyrights-negotiation:v1.0.0"
+    container_name: copyright-negotiation
     working_dir:
       /usr/src/app
-    ports:
-      - 3003:3003
+  #    ports:
+  #      - 3003:3003
 
-  metadata-model:
-    image: "mediaverseeu/metadata-model"
-    working_dir:
-      /usr/src/app
+#  metadata-model:
+#   image: "mediaverseeu/metadata-model"
+#   working_dir:
+#     /usr/src/app
+#    ports:
+#      - 3002:3002
+
+  postfix:
+    image: takeyamajp/postfix
+#    ports:
+#      - "8025:25"
+#      - "8587:587"
+#      - "8465:465"
+    volumes:
+      - /my/own/certs:/ssl_certs
+      - /my/own/keys:/dkim_keys
+    env_file:
+      - ./config/postfix/.env
+
+  #######################################
+  # Postgres: The database used by Kong
+  #######################################
+  kong-database:
+    image: "postgres:9.6"
+    container_name: "kong-database"
+    restart: always
+    #    ports:
+    #      - 5432:5432
+    env_file:
+      - ./config/kong/postgres/.env
+    volumes:
+      - mv_postgres_data:/var/lib/postgresql/data
+
+  #######################################
+  # Kong database migration-Init script to bootstrap DB
+  #######################################
+  kong-migration:
+    image: kong/kong-gateway:2.8.1.0-alpine
+    container_name: "kong-gateway-bootstrap"
+    command: "kong migrations bootstrap"
+    restart: on-failure
+    env_file:
+      - ./config/kong/kong-migration/.env
+    depends_on:
+      - kong-database
+
+  #######################################
+  # Kong: The API Gateway
+  #######################################
+  kong:
+    image: kong/kong-gateway:2.8.1.0-alpine
+    container_name: "kong-gateway"
+    restart: always
+    env_file:
+      ./config/kong/kong-gateway/.env
+    depends_on:
+      - kong-migration
+      - kong-database
     ports:
-      - 3002:3002
+      - "3000:8000"  # HTTP traffic
+#      - "8001:8001"  # HTTP ADMIN API
+#      - "8002:8002"  # HTTP ADMIN GUI
+#      - "8443:8443"  # HTTPS traffic
+#      - "8444:8444"  # HTTPS ADMIN API
+#      - "8445:8445"  # HTTPS ADMIN GUI
+#      - "8003:8003"  #DEV PORTAL port
+#      - "8004:8004"  #Dev Portal /files traffic over HTTP
+
+  curl:
+    image: alpine/curl
+    container_name: "kong-gateway-setup"
+    restart: on-failure
+    depends_on:
+      - kong
+    volumes:
+      - ./config/kong/init:/init
+    working_dir: /init
+    command: "./init.sh"
 
 volumes:
   mv_solr_data:
   mv_mongo_data:
+  mv_postgres_data:
+  ipfs_data:
   backend-storage:
     driver: local
   eth-net:
   static-content:
+
