@@ -70,7 +70,7 @@ MONGO_ROOT_PASSWORD=b51d1c*5287&11ec
 
 #### **b) DAM:** `./config/dam/.env`
 
-Set mongo db parameters: 
+`Set mongo db parameters:` 
 
 ```sh
 # Mongo DB parameters
@@ -87,7 +87,7 @@ MONGO_ROOT_PASSWORD=<not common>
 
 where *MONGO_ROOT_USERNAME*, *MONGO_ROOT_PASSWORD*, *MONGO_DB_NAME* should be replaced with their actual values.
 
-Set asset storage:
+`Set asset storage:`
 
 ```sh
 FILE_HOST_ENV=<not common>
@@ -113,6 +113,8 @@ AWS_SECRET_ACCESS_KEY=<not common>
 AWS_REGION=<not common>
 ```
 
+`Set the domain of the node`
+
 The domain or IP of the DAM has to be configured. This value is used to generate proxy format links and deep links.
 
 ```sh
@@ -133,6 +135,7 @@ DAM_DOMAIN=https://my.domain.com:5000
 
 with `xxx.xxx.xxx.xxx` being the IP of the server in which the service is deployed, and `5000` being the port in which DAM's API is exposed.
 
+`Set the name of the node`
 A vague name which specifies the name of the node should be specified.
 
 ```sh
@@ -141,6 +144,7 @@ DAM_NAME=<not commom>
 DAM_NAME=atc-vm.gr
 ```
 
+`Set maximum file size limit`
 Maximum file size limit can also be set:
 ```sh
 SPRING_SERVLET_MULTIPART_MAX-FILE-SIZE=25MB # meaning total file size cannot exceed 25MB.
@@ -148,12 +152,7 @@ SPRING_SERVLET_MULTIPART_MAX-REQUEST-SIZE=25MB #meaning total request size for a
 ## If not set 25MB will be the default
 ```
 
-```sh
-DAM_NAME=<not commom> 
-# For example:
-DAM_NAME=atc-vm.gr
-```
-
+`Set the Twitter configuration`
 For interacting with twitter an API Key and Secret must be generated following the below steps:
 Sign up for a developer account:
 
@@ -177,6 +176,7 @@ TWITTER_OAUTH_CONSUMER_KEY=<not common - define the dev twitter key>
 TWITTER_OAUTH_CONSUMER_SECRET=<not common - define the dev twitter secret>
 ```
 
+`Set the Youtube configuration`
 For interacting with YouTube Data API v3 you need to create or use an existing Google account used for the project.
 
 Follow the steps below to complete the Google project creation and configuration.
@@ -215,10 +215,23 @@ GOOGLE_OAUTH_CLIENT_SECRET =<not common - define the dev google secret>
 With these keys we can make requests from the DAM to the YouTube DATA API on behalf of a logged-in user to Google 
 (only for the request that cover the requested scopes - in our case only to upload videos to YouTube).
 
+`Set the Truly Media configuration`
+For setting up the connection with Truly Media platform:
+
+1. Request a new TRULY_ORGANIZATION_API_KEY from Truly Media personnel by sending a mail to support@truly.media
+2. After receiving the key include the below two env variables
+
+```sh 
+TRULY_ORGANIZATION_API_KEY = <key received by Truly media>
+TRULY_DOMAIN = <the domain of the Truly Media platform>
+```
+Please also notice that Truly Media platform requires a Twitter account to be present otherwise the user will not be able to sign in to the platform.
+
+`Set the mail configuration`
 ```sh
 MAIL_USERNAME=mail_root@DOMAIN_EMAIL_NAME # a generic user for connecting to smtp, the DOMAIN_EMAIL_NAME must be the same as the one that will be set for postfix service
 ```
-
+`Keep the below values unless there is a good reason to modify them`
 The following parameters can be left untouched:
 
 ```sh
@@ -226,6 +239,7 @@ SOLR_URL=http://solr:8983/solr # the same for all nodes.
 IPR_URL=http://ipr-service:8081 # the same for all nodes
 IPFS_URL=http://ipfs_host:5001/api/v0/ # the same for all nodes
 TRANSCODER_URL=http://transcoder:5000 # the same for all nodes
+HATESPEECH_URL=https://services.atc.gr # the same for all nodes
 
 # it is the URL of NDD service
 NDD_URL=<not common> # for V1 it will be the same for all nodes 
@@ -358,7 +372,7 @@ REACT_APP_LICENSES_URL=http://{DOMAIN_NAME}/{copyright}
 # It is the DOMAIN of the node + /ipr
 REACT_APP_IPR_URL=http://{DOMAIN_NAME}/{ipr}
 # It is the DOMAIN of the node + /ipfs
-REACT_APP_FEDSE_URL=http://{DOMAIN_NAME}/{ipfs}
+REACT_APP_FEDSE_URL=wss://{DOMAIN_NAME}/{ipfs}
 
 ```
 
