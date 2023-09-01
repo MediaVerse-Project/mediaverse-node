@@ -33,3 +33,15 @@ curl -i -X POST \
   --url http://kong:8001/services/moderation-ui-service/routes \
   --data 'name=moderation-ui-route' \
   --data 'paths[]=/moderation-ui'
+
+#Create template studio route
+curl -i -X POST \
+  --url http://kong:8001/services/template-studio-service/routes \
+  --data 'name=template-studio-route' \
+  --data 'paths[]=/template-studio'
+
+#Create fader360 route
+curl -i -X POST \
+  --url http://kong:8001/services/fader360-service/routes \
+  --data 'name=fader360-route' \
+  --data 'paths[]=/fader360'

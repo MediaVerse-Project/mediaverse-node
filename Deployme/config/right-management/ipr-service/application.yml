@@ -1,11 +1,16 @@
+spring:
+  jackson:
+    default-property-inclusion: NON_NULL #ObjectMapper property inclusion (do not change)
+
 logging:
   level:
     root: INFO #define the level of logging: ERROR > WARN > INFO > DEBUG > TRACE
 
+debug:
+  disable-slc-confirmation-check: false #disable the blockchain confirmation event check
+
 server:
   port: 8081  #port on which ipr-service is listening
-  bearer-token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJub2RlbmFtZSI6ImF0Yy12bS5nciIsInJvdXRpbmdJZCI6IjYyNDJhOGUyZTk0NWVlNzJkYTIwNGVmOUBhdGMtdm0uZ3IiLCJpZCI6IjYyNDJhOGUyZTk0NWVlNzJkYTIwNGVmOSIsImVtYWlsIjoiaXByLXNlcnZpY2VAbWVkaWF2ZXJzZS5hdGMuZ3IiLCJ1c2VybmFtZSI6Imlwci1zZXJ2aWNlQG1lZGlhdmVyc2UuYXRjLmdyIn0.CrAdaiqXYnqnS_khc5bKhMQmT4NXNhgj3Rl0WYXY9FY
-  #bearer token of the IPR Service (to make requests to DAM)
   error:
     include-message: always #enable error detailed description
     include-stack-trace: 1 #enable stack-trace in errors description
@@ -15,3 +20,11 @@ mv-services-basepaths:
   mv-slc-engine: http://mv-slc-engine:8083  #endpoint of the MV SLC Engine
   mediaverse-node-backend: http://mv-dam-api:8888  #endpoint of the MV Node Backend
   content-discovery-services-and-copyrights-negotiation: http://copyright-negotiation:3003 #endpoint of the License Comparator
+
+mv-services-bearer-tokens:
+  mediaverse-node-backend: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJub2RlbmFtZSI6ImF0Yy12bS5nciIsInJvdXRpbmdJZCI6IjYyNDJhOGUyZTk0NWVlNzJkYTIwNGVmOUBhdGMtdm0uZ3IiLCJpZCI6IjYyNDJhOGUyZTk0NWVlNzJkYTIwNGVmOSIsImVtYWlsIjoiaXByLXNlcnZpY2VAbWVkaWF2ZXJzZS5hdGMuZ3IiLCJ1c2VybmFtZSI6Imlwci1zZXJ2aWNlQG1lZGlhdmVyc2UuYXRjLmdyIn0.CrAdaiqXYnqnS_khc5bKhMQmT4NXNhgj3Rl0WYXY9FY  #bearer token of the IPR Service (to make requests to DAM)
+  mv-blockchain-service-provider: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImlwcnNlcnZpY2UiLCJpYXQiOjE2NzYwNDExMzJ9.VzljtocoffLnv7BLqGXGckSGdVMp3M3iIIdOd_k-3pI  #bearer token of the IPR Service (to make requests to BCSP)
+
+mv-services-clients-timeouts:
+  connect-timeout: 60 #in seconds
+  read-timeout: 60 #in seconds

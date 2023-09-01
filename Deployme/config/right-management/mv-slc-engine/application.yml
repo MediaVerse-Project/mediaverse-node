@@ -8,7 +8,15 @@ server:
     include-message: always #enable error detailed description
     include-stack-trace: 1 #enable stack-trace in errors description
 
+debug:
+  ignore-derivative-work-ownership: true # workaround to support nested derivative works
+
+mv-services-clients-timeouts:
+  connect-timeout: 60 #in seconds
+  read-timeout: 60 #in seconds
+
 mv-services-basepaths:
   cicero-server: http://cicero-server:6001  #endpoint of the cicero-server
+
 slc-templates:
   library-dir: /mv-cicero-template-library  #path of the SLC templates library (inside the container)

@@ -184,8 +184,10 @@
     <field name="created_at" type="plong"/>
     <field name="url" type="string"/>
     <field name="language" type="string"/>
+    <field name="license" type="string"/>
     <field name="signature" type="string"/>
     <field name="isRegistered" type="boolean"/>
+    <field name="isModerated" type="boolean"/>
 
     <field name="image_caption" type="string"/>
     <field name="image_is_meme" type="boolean"/>
@@ -209,6 +211,8 @@
     <field name="video_nsfw_scenes_duration" type="pfloat"/>
 
     <field name="3d_detected_objects" type="strings"/>
+
+    <field name="hate_speech_detected_categories" type="strings"/>
 
     <!-- catchall field, containing all other searchable text fields (implemented via copyField further on in this schema -->
     <field name="searchable_text" type="text" indexed="true" stored="false" multiValued="true"/>

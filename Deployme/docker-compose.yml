@@ -3,7 +3,7 @@ version: "3.8"
 services:
   dam:
     container_name: mv-dam-api
-    image: mediaverseeu/dam:1.1.42
+    image: mediaverseeu/dam:1.2.55
 #    ports:
 #      - "5000:8888"
     volumes:
@@ -12,15 +12,19 @@ services:
       - "./config/dam/terms.pdf:/static/terms.pdf"
       - "./config/dam/privacy.pdf:/static/privacy.pdf"
       - "./config/dam/cookies.pdf:/static/cookies.pdf"
+      - "./config/dam/MVlogo512.png:/static/MVlogo512.png"
+      - "./config/dam/favicon.ico:/static/favicon.ico"
+
     env_file:
       - ./config/dam/.env
     depends_on:
       - mongo
       - solr
+      - ipfs_host
 
   dashboard-ui:
     container_name: dashboard-ui
-    image: mediaverseeu/dashboard-ui:1.1.13
+    image: mediaverseeu/dashboard-ui:1.1.31
 #    ports:
 #      - "3000:80"
     env_file:
@@ -28,22 +32,26 @@ services:
 
   moderation-ui:
     container_name: moderation-ui
-    image: mediaverseeu/moderatorui:1.0.8
+    image: mediaverseeu/moderatorui:1.0.23
 #    ports:
 #      - "3000:80"
     env_file:
       - ./config/moderationui/.env
 
+  slc-template-studio:
+    image: mediaverseeu/slc-template-studio:1.0.2
+    env_file:
+      - ./config/right-management/slc-template-studio/.env
 
   ipr-service:
     container_name: ipr-service
-    image: mediaverseeu/ipr-service:7.0.0
+    image: mediaverseeu/ipr-service:11.0.0
     volumes:
       - "./config/right-management/ipr-service/application.yml:/application.yml"
 
   mv-slc-engine:
     container_name: mv-slc-engine
-    image: mediaverseeu/mv-slc-engine:6.0.0
+    image: mediaverseeu/mv-slc-engine:9.0.0
     volumes:
       - "./config/right-management/mv-slc-engine/application.yml:/application.yml"
       - "./config/right-management/mv-cicero-template-library:/mv-cicero-template-library"
@@ -58,7 +66,7 @@ services:
 
   mv-bcsp:
     container_name: mv-bcsp
-    image: mediaverseeu/mv-blockchain:2.0.1
+    image: mediaverseeu/mv-blockchain:4.0.1
     volumes:
       - "./config/right-management/mv-bcsp/config/config.json:/mv-blockchain-service-provider/config/config.json"
     env_file:
@@ -67,7 +75,7 @@ services:
 
   mv-bcspeh:
     container_name: mv-bcspeh
-    image: mediaverseeu/mv-blockchain-event:1.1.0
+    image: mediaverseeu/mv-blockchain-event:3.0.0
     volumes:
       - "./config/right-management/mv-bcsp/config/config.json:/mv-blockchain-service-provider-event-handler/config/config.json"
     env_file:
@@ -127,7 +135,7 @@ services:
     
   mv_ipfs_api:
     container_name: ipfs_api
-    image: mediaverseeu/mv_ipfs_api:1.2.0
+    image: mediaverseeu/mv_ipfs_api:1.2.1
 #    ports:
 #      - "4040:4040"
     env_file:
@@ -144,7 +152,8 @@ services:
       - static-content:/usr/share/nginx/html
 
   transcoder:
-    image: "mediaverseeu/transcoder:1.1.5"
+    image: "mediaverseeu/transcoder:1.1.11"
+    restart: always
 #    ports:
 #      - 5500:5000
     volumes:
@@ -237,6 +246,127 @@ services:
     working_dir: /init
     command: "./init.sh"
 
+  cmrr:
+    image: mediaverseeu/recsys
+    container_name: cmrr
+    volumes:
+      - cmrrvol:/app/
+    ports:
+      - 8007:8007
+    entrypoint: ["flask", "run", "--port", "8007", "--host", "0.0.0.0"]
+
+  #######################################
+  # Postgres: The database used by Omaf and Fader
+  #######################################
+
+  vragments-db:
+    container_name: vragments-db
+    image: postgres:14.4-alpine
+    environment:
+      # add whatever password you like
+      POSTGRES_PASSWORD: postgres
+      # add whatever db name you like
+      POSTGRES_DB: faderomafdb 
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - vragments_db_data:/var/lib/postgresql/data/pgdata
+    restart: always
+
+  #######################################
+  # MediaVerse OMAF Transcoder
+  #######################################
+
+  mv_omaf-app:
+    container_name: mv_omaf-app
+    image: mediaverseeu/omaf:${MV_OMAF_VERSION}
+    volumes:
+      - omaf_transcoded_files:${MV_OMAF_TRANSCODED_ASSETS_PATH}
+      - omaf_downloaded_files:/root/downloaded_files
+    env_file:
+      - ./config/omaf/.env
+    ports:
+      - ${MV_OMAF_CONTAINER_PORT}:${MV_OMAF_CONTAINER_PORT}
+    depends_on:
+      - vragments-db
+    restart: always
+
+  #######################################
+  # Fader 360 backend
+  #######################################
+
+  fader360-backend:
+    container_name: fader360-backend
+    image: mediaverseeu/fader360-backend:${FADER360_BACKEND_VERSION}
+    volumes:
+      - fader_media:/root/darth_release/lib/darth-${FADER360_BACKEND_VERSION_NUMBER}/priv/static/media
+      - fader_mv_asset_previews:/root/darth_release/lib/darth-${FADER360_BACKEND_VERSION_NUMBER}/priv/static/preview_download
+    env_file:
+      - ./config/fader/.env
+    ports:
+      - 17000:17000
+    depends_on:
+      - vragments-db
+    restart: always
+
+  #######################################
+  # Fader 360 frontend
+  #######################################
+
+  fader360-frontend:
+    container_name: fader360-frontend
+    image: mediaverseeu/fader360-frontend:${FADER360_FRONTEND_VERSION}
+    env_file:
+      - ./config/fader/.env
+    ports:
+      - 17010:17010
+    depends_on:
+      - fader360-backend
+    restart: always
+
+  #######################################
+  # Fader 360 reverseproxy
+  #######################################
+
+  fader360-reverseproxy:
+    image: nginx
+    container_name: fader360-reverseproxy
+    ports:
+      - "${FADER360_REVERSE_PROXY_CONTAINER_PORT}:80"
+    volumes:
+      # Fader backend and frontend ports are statically given in ./config/fader/nginx/nginx.conf as 17000 and 17010 respectively
+      # If you want to use different ports, please undate the './config/fader/nginx/nginx.conf' as well as this docker-compose file
+      - ./config/fader/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - fader360-backend
+      - fader360-frontend
+    restart: always
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    container_name: prometheus
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    restart: always
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana
+    ports:
+      - 9000:3000
+    restart: always
+    links:
+      - prometheus:prometheus
+    environment:
+      GF_INSTALL_PLUGINS: grafana-clock-panel, grafana-simple-json-datasource
+    depends_on:
+      - prometheus
+
+
+
 volumes:
   mv_solr_data:
   mv_mongo_data:
@@ -246,4 +376,11 @@ volumes:
     driver: local
   eth-net:
   static-content:
+  cmrrvol:
+  vragments_db_data:
+  omaf_transcoded_files:
+  omaf_downloaded_files:
+  fader_media:
+  fader_mv_asset_previews:
+
 

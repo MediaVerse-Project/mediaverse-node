@@ -4,7 +4,7 @@
 ## Introduction
 
 [MediaVerse](https://mediaverse-project.eu/) is funded under the Horizon2020 scheme of the European Commission.
-The goal of this project is to set up a decentralised network of content management nodes through which content owners and creators can easily exchange content and negotiate media rights while next generation authoring tools and innovative collaboration spaces foster the creation of personalised, immersive and accessible future media experiences.
+The goal of this project is to set up a decentralized network of content management nodes through which content owners and creators can easily exchange content and negotiate media rights while next generation authoring tools and innovative collaboration spaces foster the creation of personalised, immersive and accessible future media experiences.
 
 ### What’s the idea?
 
@@ -14,7 +14,7 @@ This is where MediaVerse comes in: MediaVerse aims to enable all sorts of conten
 
 - Co-creation tools, where multiple users can work on their projects together, supporting also immersive media like interactive 360° videos and 3D objects;
 - Social analytics tools to follow the trends and connect with your existing Social Media channels both ways – re-using the media you posted there as well as posting your new creations;
-- A decentralised network to share the media;
+- A decentralized network to share the media;
 - AI-supported tools for content analysis to make it easier to find content fragments on which to build your media, including tools to spot inappropriate content to protect your audience;
 - Blockchain-enabled tools to negotiate your intellectual property rights and be paid appropriately;
 - Automated language translation and other tools to facilitate the creation of accessible media.
@@ -38,14 +38,18 @@ The deployment structure consists of a **docker-compose** file, a **mongo init s
 ```sh
 config
 ..dam
-..kong
-..mongo
-..right-management
-..ui
+..fader
 ..ipfs_api
 ..ipfs_host
-..solr
+..kong
+..moderationui
+..mongo
+..omaf
 ..postfix
+..prometheus
+..right-management
+..solr
+..ui
 ```
 
 This folder includes all the configuration of the node.
@@ -70,7 +74,7 @@ MONGO_ROOT_PASSWORD=b51d1c*5287&11ec
 
 #### **b) DAM:** `./config/dam/.env`
 
-Set mongo db parameters: 
+`Set mongo db parameters:` 
 
 ```sh
 # Mongo DB parameters
@@ -87,7 +91,7 @@ MONGO_ROOT_PASSWORD=<not common>
 
 where *MONGO_ROOT_USERNAME*, *MONGO_ROOT_PASSWORD*, *MONGO_DB_NAME* should be replaced with their actual values.
 
-Set asset storage:
+`Set asset storage:`
 
 ```sh
 FILE_HOST_ENV=<not common>
@@ -113,6 +117,8 @@ AWS_SECRET_ACCESS_KEY=<not common>
 AWS_REGION=<not common>
 ```
 
+`Set the domain of the node`
+
 The domain or IP of the DAM has to be configured. This value is used to generate proxy format links and deep links.
 
 ```sh
@@ -125,15 +131,23 @@ For example:
 DAM_DOMAIN=http://{DOMAIN_NAME}/dam
 ```
 
-or 
+`Set the security secret of the node`
+
+This is a string that will be used to sign the jwt tokens that are used for authentication and authorization purposes.
 
 ```sh
-DAM_DOMAIN=https://my.domain.com:5000
+JWT_SECRET={32 characters long String}
 ```
 
-with `xxx.xxx.xxx.xxx` being the IP of the server in which the service is deployed, and `5000` being the port in which DAM's API is exposed.
+For example:
 
-A vague name which specifies the name of the node should be specified.
+```sh
+JWT_SECRET=x7aiYOMPMDdoJj4XjQnR4CmmbYCdimTT
+```
+
+
+`Set the name of the node`
+ A characteristic name for the node should be specified. This facilitates federated search as the retrieved assets are tagged with the name of the node, alongside its domain name or IP.
 
 ```sh
 DAM_NAME=<not commom> 
@@ -141,6 +155,7 @@ DAM_NAME=<not commom>
 DAM_NAME=atc-vm.gr
 ```
 
+`Set maximum file size limit`
 Maximum file size limit can also be set:
 ```sh
 SPRING_SERVLET_MULTIPART_MAX-FILE-SIZE=25MB # meaning total file size cannot exceed 25MB.
@@ -148,12 +163,7 @@ SPRING_SERVLET_MULTIPART_MAX-REQUEST-SIZE=25MB #meaning total request size for a
 ## If not set 25MB will be the default
 ```
 
-```sh
-DAM_NAME=<not commom> 
-# For example:
-DAM_NAME=atc-vm.gr
-```
-
+`Set the Twitter configuration`
 For interacting with twitter an API Key and Secret must be generated following the below steps:
 Sign up for a developer account:
 
@@ -177,6 +187,7 @@ TWITTER_OAUTH_CONSUMER_KEY=<not common - define the dev twitter key>
 TWITTER_OAUTH_CONSUMER_SECRET=<not common - define the dev twitter secret>
 ```
 
+`Set the Youtube configuration`
 For interacting with YouTube Data API v3 you need to create or use an existing Google account used for the project.
 
 Follow the steps below to complete the Google project creation and configuration.
@@ -215,10 +226,25 @@ GOOGLE_OAUTH_CLIENT_SECRET =<not common - define the dev google secret>
 With these keys we can make requests from the DAM to the YouTube DATA API on behalf of a logged-in user to Google 
 (only for the request that cover the requested scopes - in our case only to upload videos to YouTube).
 
+`Set the Truly Media configuration`
+For setting up the connection with Truly Media platform:
+
+1. Request a new TRULY_ORGANIZATION_API_KEY from Truly Media personnel by sending a mail to support@truly.media
+2. After receiving the key include the below two env variables
+
+```sh 
+TRULY_ORGANIZATION_API_KEY = <key received by Truly media>
+TRULY_DOMAIN = <the domain of the Truly Media platform>
+```
+Please also notice that Truly Media platform requires a Twitter account to be present otherwise the user will not be able to sign in to the platform.
+
+`Set the mail configuration`
 ```sh
 MAIL_USERNAME=mail_root@DOMAIN_EMAIL_NAME # a generic user for connecting to smtp, the DOMAIN_EMAIL_NAME must be the same as the one that will be set for postfix service
+MAIL_PASSWORD=mail_password # a generic password
+MAIL_HOST=postfix # the name of the postfix service
 ```
-
+`Keep the below values unless there is a good reason to modify them`
 The following parameters can be left untouched:
 
 ```sh
@@ -226,122 +252,221 @@ SOLR_URL=http://solr:8983/solr # the same for all nodes.
 IPR_URL=http://ipr-service:8081 # the same for all nodes
 IPFS_URL=http://ipfs_host:5001/api/v0/ # the same for all nodes
 TRANSCODER_URL=http://transcoder:5000 # the same for all nodes
-
-# it is the URL of NDD service
-NDD_URL=<not common> # for V1 it will be the same for all nodes 
-# For example:
-NDD_URL=https://mever.iti.gr/ndd/api/v3
-
-# the URL of the media annotation service
-GRPC_URL=<not common>  # for V1 it will be the same for all nodes, 
-# For example:
-GRPC_URL=160.40.53.61:37526
-
+CMRR_URL=http://cmrr:8007 # the same for all nodes
+HATESPEECH_URL=https://services.atc.gr # the same for all nodes
+NDD_URL=https://mever.iti.gr/ndd/api/v3 # the same for all nodes
+GRPC_URL=apis.mever.gr:443 # the same for all nodes
 SERVER_PORT=8888 # the same for all nodes
 
-MAIL_PASSWORD=mail_password # a generic password
-MAIL_HOST=postfix # the name of the postfix service
+RACU_KEY=<available upon request / provided by SWISSTEXT>
+SPRING_WEB_RESOURCES_STATIC-LOCATIONS=file:/static/
+
+
 ```
 
 #### **c) Right-Management components:**
 
-First, the *cicero-template-library* must be cloned from gitlab:
-
+##### Setup mv-cicero-template-library
+mv-cicero-template-library has been configured as a git submodule which will be cloned at `Deployme/config/right-management/mv-cicero-template-library`.  
+The below command can be used for cloning the submodule:
 ```sh
-git clone https://gitlab.com/mediaverse/wp4/smart-legal-contracts/mv-cicero-template-library.git
+ git submodule update --init --recursive --remote
 ```
 
 ##### Parameters that shall be configured
 
-Edit *mv-slc-engine* and *cicero-server* services in the [Deployme/docker-compose.yml](./Deployme/docker-compose.yml):
+---
 
-```sh
-mv-slc-engine:   
-  volumes:
-  - "path/to/mv-cicero-template-library:/mv-cicero-template-library"
+A) `Deployme/config/right-management/ipr-service/application.yml`
 
-cicero-server:   
-  volumes:
-  - "path/to/mv-cicero-template-library:/mv-cicero-template-library"
+The bearer token that will be used for authenticating IPR service against DAM (`mv-services-bearer-tokens.mediaverse-node-backend` property) must be set.  
+The process for generating the bearer token is:
+1.  Take the JWT_SECRET that has been defined in b)(DAM) section
+2.  Go to https://jwt.io/ and put it in the VERIFY SIGNATURE
+3.  Add the following payload 
+{
+  "id": "6242a8e2e945ee72da204ef9",
+  "email": "ipr@mediaverse.org",
+  "username": "ipr"
+}
+4.  Keep the other default values
+5.  Copy the value of the generated jwt token from the encoded section
+
+
+The bearer token that will be used for authenticating IPR service against Blockchain Service Provider (BCSP) must be set.  
+To generate the bearer token use:
+
+```
+docker run -it --rm mediaverse/mv-blockchain:4.0.1 npm run generatetoken
 ```
 
-*path/to/mv-cicero-template-library* shall be the path where the *mv-cicero-template-library* was cloned.
+> N.B. Keep the `TOKEN_SECRET="..."` for the next step.
 
-Edit `Deployme/config/right-management/ipr-service/application.yml` to add *bearer token* of the IPR Service (to make requests to DAM):
+Both the bearer tokens shall be set in the relative section of the configuration file (`Deployme/config/right-management/ipr-service/application.yml`):
 
 ```sh
-server:
-  bearer-token: XXXX  
+mv-services-bearer-tokens:
+  mediaverse-node-backend: {DAM jwt token defined above}  #bearer token of the IPR Service (to make requests to DAM)
+  mv-blockchain-service-provider: {BCSP jwt token defined above} #bearer token of the IPR Service (to make requests to BCSP)
 ```
 
-For v1, the following *bearer token* can be used:
+---
+
+B) `Deployme/config/right-management/mv-bcsp/.env`
+
+For the **development** environment, paste the text below inside `Deployme/config/right-management/mv-bcsp/.env` and replace `DEFAULT_MV_NODE_PRIVATE_KEY` and `TOKEN_SECRET` values with yours:
 
 ```sh
-server:
-  bearer-token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJub2RlbmFtZSI6ImF0Yy12bS5nciIsInJvdXRpbmdJZCI6IjYyNDJhOGUyZTk0NWVlNzJkYTIwNGVmOUBhdGMtdm0uZ3IiLCJpZCI6IjYyNDJhOGUyZTk0NWVlNzJkYTIwNGVmOSIsImVtYWlsIjoiaXByLXNlcnZpY2VAbWVkaWF2ZXJzZS5hdGMuZ3IiLCJ1c2VybmFtZSI6Imlwci1zZXJ2aWNlQG1lZGlhdmVyc2UuYXRjLmdyIn0.CrAdaiqXYnqnS_khc5bKhMQmT4NXNhgj3Rl0WYXY9FY
+NODE_ENV=mv-eth
+DEFAULT_MV_NODE_PRIVATE_KEY=MV-NODE-PRIVATE-KEY
+TOKEN_SECRET="SECRET-KEY-GENERATED-IN-PREVIOUS-STEP"
 ```
 
-Edit `Deployme/config/right-management/mv-bcsp/.env` to include private key for MV ethereum network
+For the **production** environment, follow these steps:
 
-```sh
-DEFAULT_MV_NODE_PRIVATE_KEY=XXXX
+1. Create an account on [INFURA](https://infura.io/) and generate a new API key.
+
+2. Give a project Name and select **Web3 API** as network.
+
+3. Clear BCSP configuration with this command:
+
+```
+docker run -v Deployme/config/right-management/mv-bcsp/config/:/mv-blockchain-service-provider/config/ -it --rm mediaverse/mv-blockchain:4.0.1 npm run preparedeploy
 ```
 
-For that parameter, one of the private keys that are generated by the **mv-eth** container that can be retrieved by looking at the container logs. As for now the keys are fixed and generated from the same seed 'mediaverse':
+4. If you do not have your own wallet, you **must create a new one** with the command:
 
-```sh
-DEFAULT_MV_NODE_PRIVATE_KEY=XXXX
+```
+docker run -v Deployme/config/right-management/mv-bcsp/config/:/mv-blockchain-service-provider/config/ -it --rm mediaverse/mv-blockchain:4.0.1 npm run createwallet
 ```
 
-##### Parameters that can be left untouched
+**NOTE: you will be asked to enter a password to encrypt the wallet. After that, the wallet address will be printed out, store it somewhere, you will need it to recharge with ETH. Meanwhile, the password you have entered will have to be written into the WALLET_PW field inside the `Deployme/config/right-management/mv-bcsp/.env` file (see next step). The wallet must have ETH on the chosen testnet to allow the BCSP to deploy and interact with the contracts. You can gain SepoliaETH for free by using [Infura faucet](https://www.infura.io/faucet/sepolia) using the wallet address given in the previous step. We suggest that you have at least 1 SepoliaETH to allow contracts to be correctly deployed onto the blockchain network. In addition, the admin must periodically check the availability of SepoliaETH to ensure the correct execution of transactions.**
 
-`Deployme/config/right-management/ipr-service/application.yml`
+5. Paste the text below inside `Deployme/config/right-management/mv-bcsp/.env` and replace `INFURA_API_KEY`, `TOKEN_SECRET` and `WALLET_PW` values with yours:
 
 ```sh
+NODE_ENV="production" 
+DEFAULT_NETWORK="sepolia"
+INFURA_API_KEY="YOUR-INFURA-API-KEY"
+TOKEN_SECRET="SECRET-KEY-GENERATED-IN-PREVIOUS-STEP"
+WALLET_PW="WALLET-PASSWORD-USED-DURING-WALLET-GENERATION"
+```
+
+---
+
+##### Below configurations can be left untouched
+
+---
+
+A) `Deployme/config/right-management/ipr-service/application.yml`
+
+```sh
+spring:
+  jackson:
+    default-property-inclusion: NON_NULL  #ObjectMapper property inclusion (do not change)
+
+logging:
+  level:
+    root: INFO  #define the level of logging: ERROR > WARN > INFO > DEBUG > TRACE
+
+debug:
+  disable-slc-confirmation-check: false #disable the blockchain confirmation event check
+
 server:
   port: 8081  #port on which ipr-service is listening
   error:
-    include-message: always #enable error detailed description
+    include-message: always  #enable error detailed description
+    include-stack-trace: 1  #enable stack-trace in errors description
+
 mv-services-basepaths:
   mv-blockchain-service-provider: http://mv-bcsp:8082/ipr/bc  #endpoint of the BCSP
   mv-slc-engine: http://mv-slc-engine:8083  #endpoint of the MV SLC Engine
   mediaverse-node-backend: http://mv-dam-api:8888  #endpoint of the MV Node Backend
+  content-discovery-services-and-copyrights-negotiation: http://copyright-negotiation:3003  #endpoint of the License Comparator
+
+mv-services-clients-timeouts:
+  connect-timeout: 60  #in seconds
+  read-timeout: 60  #in seconds
+
 ```
 
-`Deployme/config/right-management/mv-slc-engine/application.yml`
+---
+
+B) `Deployme/config/right-management/mv-slc-engine/application.yml`
 
 ```sh
+
+logging:
+  level:
+    root: INFO  #define the level of logging: ERROR > WARN > INFO > DEBUG > TRACE
+
 server:
   port: 8083  #port on which mv-slc-engine is listening
   error:
-    include-message: always #enable error detailed description
+    include-message: always  #enable error detailed description
+    include-stack-trace: 1  #enable stack-trace in errors description
+
+debug:
+  ignore-derivative-work-ownership: true  #to enable nested derivative works
+
+mv-services-clients-timeouts:
+  connect-timeout: 60  #in seconds
+  read-timeout: 60  #in seconds
+
 mv-services-basepaths:
   cicero-server: http://cicero-server:6001  #endpoint of the cicero-server
+
 slc-templates:
   library-dir: /mv-cicero-template-library  #path of the SLC templates library (inside the container)
+
 ```
 
-`Deployme/config/right-management/cicero-server/.env`
+---
+
+C) `Deployme/config/right-management/cicero-server/.env`
 
 ```sh
 CICERO_PORT=6001  #port on which cicero-server is listening
 CICERO_DIR=/mv-cicero-template-library  #path of the SLC templates library (inside the container)
 ```
+---
 
-`Deployme/config/right-management/mv-bcsp/config/config.json` shall be empty during first run
-
-`Deployme/config/right-management/mv-bcsp/.env`
-
+D) `Deployme/config/right-management/mv-bcsp/config/config.json`  
+> N.B. It shall be empty during first run.
 ```sh
-NODE_ENV="mv-eth" #name of the docker service container of the local blockchain deployment
+{
+
+}
 ```
 
-`Deployme/config/right-management/mv-bcspeh/.env`
+---
+
+F) `Deployme/config/right-management/mv-bcsp/.env`
 
 ```sh
-NODE_ENV=mv-eth #name of the docker service container of the local blockchain deployment
-IPR_SERVICE_ENDPOINT=http://ipr-service:8081/ #endpoint of the IPR Service
-UPDATE_API_ENDPOINT=event/update #path of the event update API of the IPR Service
+RPC_CONNECTION_TIMEOUT=60000  #timeout of the RPC
+```
+
+---
+
+E) `Deployme/config/right-management/mv-bcspeh/.env`
+
+For the **development** environment, paste the text below inside `Deployme/config/right-management/mv-bcspeh/.env`:
+
+```sh
+NODE_ENV=mv-eth  #name of the docker service container of the local blockchain deployment
+IPR_SERVICE_ENDPOINT=http://ipr-service:8081/  #endpoint of the IPR Service
+UPDATE_API_ENDPOINT=event/update  #path of the event update API of the IPR Service
+```
+
+For the **production** environment, paste the text below inside `Deployme/config/right-management/mv-bcspeh/.env` and replace `INFURA_API_KEY` value with your:
+
+```sh
+NODE_ENV="production" 
+DEFAULT_NETWORK="sepolia"
+INFURA_API_KEY="YOUR-INFURA-API-KEY"
+IPR_SERVICE_ENDPOINT=http://ipr-service:8081/  #endpoint of the IPR Service
+UPDATE_API_ENDPOINT=event/update  #path of the event update API of the IPR Service
 ```
 
 #### **d) UI** `./config/ui/.env`
@@ -352,17 +477,25 @@ URLS FORMAT = {DOMAIN_NAME}/{COMPONENT_PATH}
 
 ```sh
 # It is the DOMAIN of the node + /dam
-REACT_APP_API_URL=http://{DOMAIN_NAME}/{dam}
+REACT_APP_API_URL=https://{DOMAIN_NAME}/{dam}
 # It is the DOMAIN of the node + /copyright 
-REACT_APP_LICENSES_URL=http://{DOMAIN_NAME}/{copyright}
+REACT_APP_LICENSES_URL=https://{DOMAIN_NAME}/{copyright}
 # It is the DOMAIN of the node + /ipr
-REACT_APP_IPR_URL=http://{DOMAIN_NAME}/{ipr}
+REACT_APP_IPR_URL=https://{DOMAIN_NAME}/{ipr}
 # It is the DOMAIN of the node + /ipfs
-REACT_APP_FEDSE_URL=http://{DOMAIN_NAME}/{ipfs}
-
+REACT_APP_FEDSE_URL=wss://{DOMAIN_NAME}/{ipfs}
+REACT_APP_NODE_URL=https://{DOMAIN_NAME}
+# It is the DOMAIN of the node + /template-studio
+REACT_APP_SLC_STUDIO=https://{DOMAIN_NAME}/{template-studio}
+# It is the maximum file size used during uploading
+REACT_APP_FILE_SIZE_UPLOAD_LIMIT=1024
+REACT_APP_FADER_URL=https://fader360.vrgmnts.net/users/mv-login
+# It is the DOMAIN of the VRodos service
+REACT_APP_VRODOS_URL=https://vrodos.iti.gr/mv-login
+# It is the DOMAIN of the NERstar tool
+REACT_APP_NERSTAR_URL=https://nerstar.sandec.de
 ```
 
-All of these services point to the same IP in which the services are deployed (`xxx.xxx.xxx.xxx`), with a different port according to the service.
 
 A firebase account must be set and configured with twitter and Google authentication provider.
 
@@ -394,24 +527,14 @@ REACT_APP_FIREBASE_API_KEY=<not common>
 
 #### **e) IPFS API** 
 
-IPFS bootstrap node:
-
+The IPFS bootstrap node parameter helps IPFS to discover the rest of the nodes in the network. 
 ```sh
 IPFS_BOOTSTRAP_ADDR=<IPFS Bootstrap Node Identifier>
 ```
-
-For example:
-
-```sh
-IPFS_BOOTSTRAP_ADDR=  /ip4/83.149.101.53/tcp/4001/p2p/12D3KooWGgFA2ZV4Uy7JUFMzs6VLCFZesPNtEpePHa3FbaX6MGHf
-```
-
-That parameter helps IPFS to discover the rest of the nodes in the neowork. For v1, `/ip4/83.149.101.53/tcp/4001/p2p/12D3KooWGgFA2ZV4Uy7JUFMzs6VLCFZesPNtEpePHa3FbaX6MGHf` will be used as bootstrap node for network discivery.
-
-Local DAM address # It is the DOMAIN of the node + the DAM path as served by KONG GW 
+`/ip4/83.149.101.53/tcp/4001/p2p/12D3KooWNRQZc9NtFVPFyG4F4jirXCkJ1vp4iDkgVHr3Ao9Efo1t` will be used as bootstrap node for network discovery. To define it, the following shall be added in the .env file. 
 
 ```sh
-DAM_ADDR=http://{DOMAIN_NAME}/dam
+IPFS_BOOTSTRAP_ADDR=/ip4/83.149.101.53/tcp/4001/p2p/12D3KooWNRQZc9NtFVPFyG4F4jirXCkJ1vp4iDkgVHr3Ao9Efo1t
 ```
 
 The following parameters can be left untouched:
@@ -421,9 +544,22 @@ IPFS_NODE_IP=ipfs_host # Container name of the IPFS Host service. Default: ipfs_
 IPFS_NODE_PORT=5001 # Port of the IPFS Host service. Default: 5001
 IPFS_NODE_TIMEOUT=10
 FSEARCH_RESULT_TIMEOUT=30
+DAM_ADDR=http://mv-dam-api:8888
+NDD_ADDR=https://mever.iti.gr
+EXPOSE_CONTENT=True
+MAX_WORKERS_NUM=4
 ```
 
-#### **f) Postfix** 
+#### **f) IPFS HOST** 
+
+Common for all nodes:
+```sh
+LIBP2P_FORCE_PNET=1
+IPFS_PROFILE=server
+IPFS_SWARM_KEY_FILE=/data/ipfs/myswarm.key
+```
+
+#### **g) Postfix (optional)** 
 The following env variables must be in place before running the postfix container:
 
 Variables with different value per node
@@ -443,14 +579,14 @@ DKIM_KEY_LENGTH=1024
 DKIM_SELECTOR=default
 ```
 More configuration options can be found at `https://github.com/takeyamajp/docker-postfix`
-It is very important to set DKIM keys in DNS of the domain for the mails to be delivered succesfully.
+It is very important to set DKIM keys in DNS of the domain for the mails to be delivered successfully.
 
-#### **f) Kong Gateway**
+#### **h) Kong Gateway**
 
 The directory for the Kong Gateway configurations consists of the following sub-directories:
 
 - postgres - In this sub-directory, there is the .env file that should be set for the postgres DB that KONG GW uses
-  to store the data needed to work (default values are proposed below - can use these with no problem)
+  to store the data needed to work (default values are proposed below)
 
 ```sh
 POSTGRES_USER=define the POSTGRES kong user | e.g. kong
@@ -461,7 +597,7 @@ POSTGRES_PASSWORD=define the POSTGRES kong user password | e.g. kongpass
 - kong-migration - In this sub-directory, there is the .env file that should be set for the KONG GW postgres DB to
   bootstrap
 
-The following parameters should be set (default values are proposed below - can use these with no problem):
+The following parameters should be set (default values are proposed below):
 
 ```sh
 KONG_DATABASE=postgres
@@ -472,7 +608,7 @@ KONG_PASSWORD= The default password used by the admin super user of the Kong Gat
 
 - kong-gateway - In this sub-directory, there is the .env file that should be set for the GW container to run
 
-The following parameters should be set (default values are proposed below - can use these with no problem):
+The following parameters should be set (default values are proposed below):
 ```sh
 #KONG_PG_HOST=<define the postgres container name that kong GW uses> <e.g. kong-database>
 #KONG_PG_USER=<define the kong-postgres user> <e.g. kong>
@@ -502,7 +638,7 @@ If permission denied error occurs when curl image executes init.sh script, navig
 "chmod a+x *.sh"
 ```
 
-#### **g) moderation UI** `./config/moderationui/.env`
+#### **i) moderation UI** `./config/moderationui/.env`
 
 The following URL should be defined:
 
@@ -512,6 +648,71 @@ URL FORMAT = {DOMAIN_NAME}/{COMPONENT_PATH}
 # It is the DOMAIN of the node + /dam/
 REACT_APP_API_URL=http://{DOMAIN_NAME}/{dam}/
 ```
+
+#### **j) Fader** `./config/fader/.env`
+
+The following should be defined:
+```sh
+PHX_SERVER="true"
+FADER360_BACKEND_VERSION=<Version number is imp to specify the image from which the container should run>
+FADER360_BACKEND_VERSION_NUMBER=<Version number is imp because of the verion dependent assets and preview assets path inside the container>
+# eg. FADER360_BACKEND_DATABASE_URL=ecto://postgres:postgres@vragments-db/faderomafdb
+FADER360_BACKEND_DATABASE_URL=<ecto database url, see https://hexdocs.pm/ecto/Ecto.Repo.html#module-urls>
+# could be any 64 long string
+FADER360_BACKEND_SECRET_KEY_BASE=<encryption secret, can be generated via https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Gen.Secret.html>
+FADER360_BACKEND_SCHEME=<url scheme, e.g. https>
+FADER360_BACKEND_HOST=<url domain, e.g. fader360.vrgmnts.net>
+FADER360_BACKEND_PORT=<url port, e.g. 443>
+FADER360_BACKEND_CONTAINER_PORT=<application listening port inside container, e.g.: 17000>
+```
+
+#### **k) MV Omaf** `./config/moderationui/.env`
+
+The following should be defined:
+```sh
+PHX_SERVER="true"
+MV_OMAF_VERSION=<Version number is important because of version dependent asset path inside container>
+MV_OMAF_DATABASE_URL=<ecto database url, see https://hexdocs.pm/ecto/Ecto.Repo.html#module-urls>
+MV_OMAF_SECRET_KEY_BASE=<encryption secret, can be generated via https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Gen.Secret.html>
+MV_OMAF_SCHEME=<url scheme, e.g. https>
+MV_OMAF_HOST=<url domain, e.g. mv_omaf.vrgmnts.net>
+MV_OMAF_PORT=<url port, e.g. 443>
+MV_OMAF_CONTAINER_PORT=<application listening port inside container, e.g.: 16000>
+MV_OMAF_TRANSCODED_ASSETS_PATH=<version dependent asset path inside container, must be: '/root/mv_omaf_release/lib/mv_omaf_web-VERSION/priv/static/assets/mv_omaf_transcoded_files', VERSION must match image version, whole string must match mounted volume>
+```
+
+#### **l) monitoring tools** 
+
+For monitoring the node, prometheus and grafana tools are supported.
+Firstly the prometheus component must be set:
+./config/prometheus/prometheus.yml must be included. The default settings are fine and they can be customized as well,
+eg. the scraping interval.
+Prometheus will be configured to listen to the DAM traffic.
+The prometheus plugin must be set by ordering:
+```sh
+curl -X POST http://localhost:8001/routes/dam-route/plugins \
+    --data "name=prometheus"  \
+    --data "config.per_consumer=false"
+```
+Reference : `https://docs.konghq.com/hub/kong-inc/prometheus/configuration/examples/`
+
+The prometheus interface will be available at:
+`http://<IP>:9090/targets?search=`
+
+After that the grafana component must be set to add Prometheus as a data source and the official Kong Dashboard to
+be imported.
+Grafana UI can be accessed at:
+`http://<IP>:9000/`
+The default username and password for Grafana is admin / admin .
+The dashboard json can be downloaded here:
+https://grafana.com/api/dashboards/7424/revisions/7/download
+And the process of importing it to the grafana service is the below:
+1.  Open your Grafana portal and go to the option of importing a dashboard.
+2.  Go to the “Upload JSON file” button, select the kong-official_rev7.json which you got from the url above.
+3.  Configure the fields according to your preferences and click on Import.
+
+The dashboard will be ready.
+
 
 ### How to run it with Docker
 
@@ -537,4 +738,22 @@ In general a conf folder is expected inside the data folder of the core.
 
 ```sh
 Please add SPRING_WEB_RESOURCES_STATIC-LOCATIONS=file:/static/ in the /Deployme/config/dam/.env
+```
+
+3. Blockchain module(mv-bcsp) fails to start
+
+```sh
+Please initialize Deployme/config/right-management/mv-bcsp/config/config.json to {}
+This shall not be used in case of a real setup with an external blockchain network (i.e., the Ethereum network).
+In fact, if the config is re-initialised with an empty object, the Blockchain Smart Contracts will be deployed again.
+Therefore, the values in the JSON config file shall be carefully stored in a safe place in order to be restored if 
+needed (rather than generating new ones).
+```
+
+3. Kong cannot route traffic to internal fader
+
+```sh
+Please order:
+curl --request PATCH --url 0.0.0.0:8001/services/fader360-service --data url=http://fader360-reverseproxy
+(recreate also kong)
 ```

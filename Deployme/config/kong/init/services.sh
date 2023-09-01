@@ -33,3 +33,15 @@ curl -i -X POST \
 --url http://kong:8001/services \
 --data 'name=moderation-ui-service' \
 --data 'url=http://moderation-ui:80'
+
+#Create template studio service
+curl -i -X POST \
+--url http://kong:8001/services \
+--data 'name=template-studio-service' \
+--data 'url=http://slc-template-studio:8084'
+
+#Create fader360 service
+curl -i -X POST \
+--url http://kong:8001/services \
+--data 'name=fader360-service' \
+--data 'url=http://fader360-reverseproxy'
